@@ -26,3 +26,7 @@ class OpenRouterSettings(BaseSettings):
     """Settings for OpenRouter API."""
     OPEN_ROUTER_API_URL: str = Field(..., env="OPEN_ROUTER_API_URL")
     OPEN_ROUTER_API_KEY: str = Field(..., env="OPEN_ROUTER_API_KEY")
+
+class MCPSettings(BaseSettings):
+    """Settings for MCP servers."""
+    MCP_SERVERS: list = Field(..., env="MCP_SERVERS")
