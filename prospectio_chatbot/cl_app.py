@@ -51,6 +51,7 @@ async def chat_profile():
 
 @cl.on_chat_start
 async def on_chat_start():
+    await core.connect_mcp_for_session()
     await core.setup_chat(chat_settings[0].values[0], chat_settings[1].initial)  # type: ignore
     await cl.ChatSettings(chat_settings).send() 
 

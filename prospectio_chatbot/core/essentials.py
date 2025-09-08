@@ -1,11 +1,17 @@
 from typing import Any, AsyncIterator
-from tomlkit import value
+from config import MCPSettings
 import chainlit as cl
 from graphs.generic_graph import GenericGraph
 from langchain_core.messages import AIMessageChunk
 from graphs.graph_factory import GraphFactory
 from graphs.graph_params import GraphParams
 from langchain.schema.runnable.config import RunnableConfig
+from chainlit.types import ConnectSseMCPRequest
+from chainlit.server import connect_mcp
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class CoreEssentials:
@@ -17,6 +23,7 @@ class CoreEssentials:
     def __init__(self):
         self.graph_params = GraphParams()
         self.graph_factory = GraphFactory(self.graph_params)
+        self.mcp_servers = MCPSettings().MCP_SERVERS
 
     async def setup_chat(self, model: str, temperature: float):
         # Copilot
@@ -71,3 +78,28 @@ class CoreEssentials:
                 sources = f"Sources:\n{formatted_sources}"
                 answer.elements.append(cl.Text(content=f"{sources}", display="inline")) # type: ignore
         return sources # type: ignore
+    
+    async def connect_mcp_for_session(self) -> dict:
+        """
+        Asynchronously connects to all MCP servers defined in the configuration for the current session.
+    
+        Iterates through the list of MCP servers, creates a connection request for each, and attempts to establish a connection
+        using the current user's session context. Returns a success message if all connections are successful, otherwise logs
+        the error and returns a failure message with error details.
+    
+        Returns:
+            dict: A dictionary containing a success or failure message, and error details if an exception occurred.
+        """
+        try:
+            for mcp in self.mcp_servers:
+                mcp_request = ConnectSseMCPRequest(
+                    sessionId=cl.context.session.id,
+                    clientType=mcp["clientType"],
+                    name=mcp["name"],
+                    url=mcp["url"],
+                )
+                await connect_mcp(payload=mcp_request, current_user=cl.context.session.user)
+            return {"message": "Connected to MCP servers successfully."}
+        except Exception as e:
+            logger.error(f"Error connecting to MCP servers: {e}")
+            return {"message": "Failed to connect to MCP servers.", "error": str(e)}
