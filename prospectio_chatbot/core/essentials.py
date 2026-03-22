@@ -36,7 +36,7 @@ class CoreEssentials:
         cl.user_session.set("temperature", temperature)
         cl.user_session.set("graph", self.graph_factory.create_graph())
 
-    async def call_agent(self, msg: cl.Message) -> AsyncIterator[dict[str, Any] | Any]:
+    async def call_agent(self) -> AsyncIterator[dict[str, Any] | Any]:
         tools_list = cl.user_session.get("mcp_tools") or []
         self.graph_params.tools_list = tools_list
         graph: GenericGraph = self.graph_factory.create_graph()

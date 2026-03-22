@@ -1,45 +1,62 @@
-[tool.poetry]
+[project]
 name = "prospectio_chatbot"
 version = "0.1.0"
 description = "Chatbot for Prospectio api and front using Chainlit"
-authors = ["Kaiohz <yohan.goncalves.pro@gmail.com>"]
-license = "Apache 2.0"
+authors = [{ name = "Yohan Goncalves", email = "yohan.goncalves.pro@gmail.com" }]
+requires-python = ">=3.12.7,<3.14"
+license = { text = "Apache 2.0" }
+dependencies = [
+    "chainlit==2.9.3",
+    "pydantic==2.10.1",
+    "numpy==2.1.0",
+    "ollama==0.6.1",
+    "torch==2.8.0",
+    "psycopg==3.2.4",
+    "psycopg-binary==3.2.4",
+    "langchain==1.0.0",
+    "langgraph==1.0.4",
+    "langchain-ollama==1.0.0",
+    "langchain-community==0.4.1",
+    "langchain-mistralai==1.1.0",
+    "httpx[http2]==0.28.1",
+    "langchain-google-genai==4.0.0",
+    "langchain-openai==1.1.2",
+    "langchain-mcp-adapters==0.2.1",
+    "greenlet==3.2.4",
+    "h11>=0.16.0",
+    "langchain-core>=1.2.5",
+    "httpcore>=1.0.9",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.12.7,<3.14"
-chainlit = "2.9.3"
-pydantic = "2.10.1"
-numpy = "2.1.0"
-ollama = "0.6.1"
-torch = "2.8.0"
-psycopg = "3.2.4"
-psycopg-binary = "3.2.4"
-langchain = "1.0.0"
-langgraph = "1.0.4"
-langchain-ollama = "1.0.0"
-langchain-community = "0.4.1"
-langchain-mistralai = "1.1.0"
-httpx = {extras = ["http2"], version = "0.28.1"}
-langchain-google-genai = "4.0.0"
-langchain-openai = "1.1.2"
-langchain-mcp-adapters = "0.2.1"
-greenlet = "3.2.4"
-h11 = "^0.16.0"
-langchain-core = "^1.2.5"
-httpcore = "^1.0.9"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "8.4.1"
-poetry-dotenv-plugin = "0.2.0"
-python-dotenv = "1.0.1"
-pytest-cov = "^7.1.0"
+[dependency-groups]
+dev = [
+    "pytest==8.4.1",
+    "python-dotenv==1.0.1",
+    "pytest-cov>=7.1.0",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["prospectio_chatbot"]
-addopts = ["-v", "--tb=short"]
+addopts = "-v --tb=short --cov --cov-report=term-missing --cov-report=xml"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["prospectio_chatbot"]
+
+[tool.coverage.run]
+source = ["prospectio_chatbot"]
+omit = [
+    "prospectio_chatbot/main.py",
+    "prospectio_chatbot/cl_app.py",
+]
+
+[tool.coverage.report]
+omit = [
+    "prospectio_chatbot/main.py",
+    "prospectio_chatbot/cl_app.py",
+]

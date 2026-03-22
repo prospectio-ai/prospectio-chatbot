@@ -59,7 +59,7 @@ async def on_chat_start():
 @cl.on_message  
 async def main(msg: cl.Message): 
     try:
-        response = await core.call_agent(msg)
+        response = await core.call_agent()
         await core.process_response(response)
     except Exception as e:
         await cl.Message(content=f"{type(e).__name__}: {e}").send()  
