@@ -31,8 +31,8 @@ def get_data_layer():
 @cl.on_chat_resume  
 async def resume_conversation(thread: ThreadDict):
     settings = thread.get("metadata").get("chat_settings")  # type: ignore
-    await core.setup_chat(settings["Model"], settings["Temperature"])  # type: ignore
-    await cl.ChatSettings(chat_settings).send() 
+    core.setup_chat(settings["Model"], settings["Temperature"])  # type: ignore
+    await cl.ChatSettings(chat_settings).send()
 
 
 @cl.password_auth_callback   # type: ignore
@@ -40,7 +40,7 @@ def auth_callback(username: str, password: str):
     if username == "prospectio" and password == "prospectio":
         return cl.User(
             identifier="admin", metadata={"role": "admin", "provider": "credentials"}
-        ) 
+        )
     return None
 
 
@@ -52,19 +52,19 @@ async def chat_profile():
 @cl.on_chat_start
 async def on_chat_start():
     await core.connect_mcp_for_session()
-    await core.setup_chat(chat_settings[0].values[0], chat_settings[1].initial)  # type: ignore
-    await cl.ChatSettings(chat_settings).send() 
+    core.setup_chat(chat_settings[0].values[0], chat_settings[1].initial)  # type: ignore
+    await cl.ChatSettings(chat_settings).send()
 
 
-@cl.on_message  
-async def main(msg: cl.Message): 
+@cl.on_message
+async def main(msg: cl.Message):
     try:
-        response = await core.call_agent()
+        response = core.call_agent()
         await core.process_response(response)
     except Exception as e:
-        await cl.Message(content=f"{type(e).__name__}: {e}").send()  
+        await cl.Message(content=f"{type(e).__name__}: {e}").send()
 
 
-@cl.on_settings_update  
+@cl.on_settings_update
 async def setup_agent(settings):
-    await core.setup_chat(settings["Model"], settings["Temperature"])  
+    core.setup_chat(settings["Model"], settings["Temperature"])  
