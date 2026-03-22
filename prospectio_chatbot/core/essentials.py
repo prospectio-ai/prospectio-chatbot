@@ -25,7 +25,7 @@ class CoreEssentials:
         self.graph_factory = GraphFactory(self.graph_params)
         self.mcp_servers = MCPSettings().MCP_SERVERS
 
-    async def setup_chat(self, model: str, temperature: float):
+    def setup_chat(self, model: str, temperature: float):
         # Copilot
         self.graph_params.agent = (
             cl.user_session.get("chat_profile") or "Prospectio"
@@ -36,7 +36,7 @@ class CoreEssentials:
         cl.user_session.set("temperature", temperature)
         cl.user_session.set("graph", self.graph_factory.create_graph())
 
-    async def call_agent(self) -> AsyncIterator[dict[str, Any] | Any]:
+    def call_agent(self) -> AsyncIterator[dict[str, Any] | Any]:
         tools_list = cl.user_session.get("mcp_tools") or []
         self.graph_params.tools_list = tools_list
         graph: GenericGraph = self.graph_factory.create_graph()
@@ -66,10 +66,10 @@ class CoreEssentials:
                 values: AIMessageChunk = chunk[1][0] # type: ignore
                 await answer.stream_token(values.content) # type: ignore
             if node_name:
-                await self.process_sources(sources_node, chunk, answer) # type: ignore
+                self.process_sources(sources_node, chunk, answer) # type: ignore
         await answer.send()
 
-    async def process_sources(self, node_name: str, chunk, answer: cl.Message) -> str:
+    def process_sources(self, node_name: str, chunk, answer: cl.Message) -> str:
         sources = []
         if chunk[0] == "updates":
             if node_name in chunk[1] and "sources" in chunk[1][node_name]:
