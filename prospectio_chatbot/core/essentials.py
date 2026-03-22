@@ -5,7 +5,7 @@ from graphs.generic_graph import GenericGraph
 from langchain_core.messages import AIMessageChunk
 from graphs.graph_factory import GraphFactory
 from graphs.graph_params import GraphParams
-from langchain.schema.runnable.config import RunnableConfig
+from langchain_core.runnables import RunnableConfig
 from chainlit.types import ConnectSseMCPRequest
 from chainlit.server import connect_mcp
 import logging
