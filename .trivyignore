@@ -1,0 +1,3 @@
+# Trivy ignore file
+# Add CVE IDs to ignore, one per line
+# Example: CVE-2023-XXXXX

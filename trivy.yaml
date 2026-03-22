@@ -1,0 +1,15 @@
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+
+scan:
+  scanners:
+    - vuln
+
+pkg:
+  types:
+    - os
+    - library
+
+ignorefile: .trivyignore
