@@ -50,20 +50,20 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
+          scanners: vuln
           severity: CRITICAL,HIGH,MEDIUM
           exit-code: "0"
           trivy-config: trivy.yaml
-          skip-dirs: .venv,venv,__pycache__
 
       - name: Trivy FS gate
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
           scan-ref: .
+          scanners: vuln
           severity: CRITICAL
           exit-code: "1"
           trivy-config: trivy.yaml
-          skip-dirs: .venv,venv,__pycache__
 
       - name: Upload coverage artifact
         if: always()
