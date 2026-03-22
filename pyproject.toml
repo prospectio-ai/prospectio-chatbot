@@ -24,6 +24,9 @@ langchain-google-genai = "4.0.0"
 langchain-openai = "1.1.2"
 langchain-mcp-adapters = "0.2.1"
 greenlet = "3.2.4"
+h11 = "^0.16.0"
+langchain-core = "^1.2.5"
+httpcore = "^1.0.9"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.4.1"
