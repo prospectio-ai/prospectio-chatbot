@@ -27,8 +27,10 @@ COPY .chainlit .chainlit
 COPY public ./public
 
 RUN addgroup --gid 1001 --system appgroup && \
-    adduser --uid 1001 --system --ingroup appgroup appuser && \
+    adduser --uid 1001 --system --home /home/appuser --ingroup appgroup appuser && \
     chown -R appuser:appgroup /app
+
+ENV HOME=/home/appuser
 
 USER appuser
 
