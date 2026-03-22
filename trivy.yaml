@@ -9,8 +9,3 @@ pkg:
     - library
 
 ignorefile: .trivyignore
-
-skip-dirs:
-  - .venv
-  - venv
-  - __pycache__
