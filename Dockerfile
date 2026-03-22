@@ -1,38 +1,37 @@
-FROM python:3.12.8-slim AS builder
+FROM python:3.12.10-slim AS base
+
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install build dependencies
-RUN pip install --upgrade pip && \
-	pip install poetry
+ENV PYTHONPATH=/app/prospectio_chatbot
 
-# Disable poetry virtualenv creation
-RUN poetry config virtualenvs.create false
+FROM base AS builder
 
-# Copy only dependency files first for better caching
-COPY ./pyproject.toml ./
-COPY ./poetry.lock ./
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Install dependencies
-RUN poetry install --no-root
+COPY pyproject.toml uv.lock ./
 
-# Copy source code
-COPY ./prospectio_chatbot ./prospectio_chatbot
+RUN uv sync --frozen --no-dev
+
+FROM base AS app
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+COPY --from=builder /app/.venv /app/.venv
+
+WORKDIR /app
+
+COPY prospectio_chatbot ./prospectio_chatbot
 COPY .chainlit .chainlit
-COPY ./public ./public
+COPY public ./public
 
-# Final stage: minimal runtime image
-FROM python:3.12.8-slim AS app
-WORKDIR /app
+RUN addgroup --gid 1001 --system appgroup && \
+    adduser --uid 1001 --system --ingroup appgroup appuser && \
+    chown -R appuser:appgroup /app
 
-# Copy installed packages from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /app/prospectio_chatbot ./prospectio_chatbot
-COPY --from=builder /app/.chainlit ./.chainlit
-COPY --from=builder /app/public ./public
+USER appuser
 
 EXPOSE 8000
 
-ENV PYTHONPATH="/app/prospectio_chatbot"
-
-CMD ["python", "-m", "uvicorn", "prospectio_chatbot.main:app", "--log-level", "warning", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "prospectio_chatbot.main:app", "--log-level", "warning", "--host", "0.0.0.0", "--port", "8000"]
