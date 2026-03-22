@@ -8,3 +8,7 @@ temp
 .DS_Store
 *pycache*
 venv
+.coverage
+coverage.xml
+htmlcov/
+.scannerwork/
