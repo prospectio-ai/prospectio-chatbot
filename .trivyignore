@@ -1,3 +1,7 @@
 # Trivy ignore file
 # Add CVE IDs to ignore, one per line
 # Example: CVE-2023-XXXXX
+
+# False positive: chainlit package source code in .venv contains a GCP service account
+# pattern (gcs.py). This is template code in the third-party library, not actual credentials.
+# Use --skip-dirs .venv to exclude virtual environment from secret scans.
