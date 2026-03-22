@@ -10,9 +10,7 @@ pkg:
 
 ignorefile: .trivyignore
 
-# Exclude virtual environments from secret scanning (false positives in third-party libs)
-scan:
-  skip-dirs:
-    - .venv
-    - venv
-    - __pycache__
+skip-dirs:
+  - .venv
+  - venv
+  - __pycache__
