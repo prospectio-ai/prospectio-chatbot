@@ -3,6 +3,10 @@ severity:
   - HIGH
   - MEDIUM
 
+scan:
+  scanners:
+    - vuln
+
 pkg:
   types:
     - os
