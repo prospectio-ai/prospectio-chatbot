@@ -114,7 +114,12 @@ jobs:
       - name: Update deployment image tag
         run: |
           DEPLOY_FILE="flux-repo/dev/prospectio/prospectio-chatbot/deployment.yaml"
-          sed -i "s|image: kaiohz/prospectio-chatbot:.*|image: kaiohz/prospectio-chatbot:${{ steps.sha.outputs.sha }}|" "${DEPLOY_FILE}"
+          if [ -f "$DEPLOY_FILE" ]; then
+            sed -i "s|image: kaiohz/prospectio-chatbot:.*|image: kaiohz/prospectio-chatbot:${{ steps.sha.outputs.sha }}|" "$DEPLOY_FILE"
+          else
+            echo "::error::Deployment file not found: $DEPLOY_FILE"
+            exit 1
+          fi
 
       # ── 11. Commit & push flux ─────────────────────────────────────
       - name: Commit and push flux update
