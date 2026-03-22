@@ -1,24 +1,55 @@
-name: CD
+name: "CD - Prospectio Chatbot"
+
 on:
   pull_request:
     types: [closed]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
-  build-and-push:
-    if: github.event.pull_request.merged == true
+  deploy:
+    if: >
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+      || (github.event_name == 'issue_comment'
+          && github.event.issue.pull_request
+          && contains(github.event.comment.body, '/deploy'))
     runs-on: ubuntu-latest
+
     steps:
+      # ── 1. Determine the SHA to deploy ──────────────────────────────
+      - name: Get deploy SHA
+        id: sha
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "sha=${{ github.event.pull_request.merge_commit_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            PR_NUMBER="${{ github.event.issue.number }}"
+            SHA=$(gh api repos/${{ github.repository }}/pulls/${PR_NUMBER} --jq '.head.sha')
+            echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 2. Acknowledge /deploy with a reaction ─────────────────────
+      - name: Add rocket reaction
+        if: github.event_name == 'issue_comment'
+        run: |
+          gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            -X POST -f content='rocket'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 3. Checkout at SHA ──────────────────────────────────────────
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          ref: ${{ steps.sha.outputs.sha }}
 
+      # ── 4. Free up disk space (needed for PyTorch/Chainlit image) ──
       - name: Free up disk space
         run: |
           docker system prune -af
@@ -27,6 +58,41 @@ jobs:
           sudo rm -rf /usr/local/share/boost
           sudo rm -rf /usr/local/lib/android
 
+      # ── 5. Setup Buildx ────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── 6. Login DockerHub ─────────────────────────────────────────
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ── 7. Build scan image (amd64 only, with cache) ──────────────
+      - name: Build scan image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: kaiohz/prospectio-chatbot:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── 8. Trivy vulnerability scan ────────────────────────────────
+      - name: Trivy report + gate
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: kaiohz/prospectio-chatbot:scan
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+      # ── 9. Build & push multi-platform image ──────────────────────
       - name: Build and push Docker image (multi-platform)
         uses: docker/build-push-action@v5
         with:
@@ -35,5 +101,27 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            kaiohz/prospectio-chatbot:${{ github.sha }}
+            kaiohz/prospectio-chatbot:${{ steps.sha.outputs.sha }}
             kaiohz/prospectio-chatbot:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── 10. Clone flux repo and update deployment ──────────────────
+      - name: Clone flux repo
+        run: |
+          git clone https://x-access-token:${{ secrets.FLUX_REPO_TOKEN }}@github.com/prospectio-ai/flux-repo.git flux-repo
+
+      - name: Update deployment image tag
+        run: |
+          DEPLOY_FILE="flux-repo/dev/prospectio/prospectio-chatbot/deployment.yaml"
+          sed -i "s|image: kaiohz/prospectio-chatbot:.*|image: kaiohz/prospectio-chatbot:${{ steps.sha.outputs.sha }}|" "${DEPLOY_FILE}"
+
+      # ── 11. Commit & push flux ─────────────────────────────────────
+      - name: Commit and push flux update
+        run: |
+          cd flux-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add dev/prospectio/prospectio-chatbot/deployment.yaml
+          git commit -m "deploy: prospectio-chatbot ${{ steps.sha.outputs.sha }}"
+          git push
